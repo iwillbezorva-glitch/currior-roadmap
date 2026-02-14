@@ -1,0 +1,45 @@
+-- Users (Supabase Auth 연동)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT, school_name TEXT, major TEXT, bio TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Roadmaps
+CREATE TABLE roadmaps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  grade INT CHECK (grade IN (1,2,3)),
+  title TEXT NOT NULL, description TEXT,
+  status TEXT DEFAULT 'planned' CHECK (status IN ('planned','in-progress','completed')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Daily Goals
+CREATE TABLE daily_goals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL, is_completed BOOLEAN DEFAULT FALSE,
+  date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Projects
+CREATE TABLE projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL, tech_stack TEXT[] DEFAULT '{}',
+  description TEXT, image_url TEXT, link_url TEXT,
+  tags TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS 활성화
+ALTER TABLE roadmaps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_goals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own data" ON roadmaps FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON daily_goals FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own data" ON projects FOR ALL USING (auth.uid() = user_id);
